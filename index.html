@@ -1,104 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Union Dues Portal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div id="login-container">
-    <h2>Login</h2>
-    <form id="login-form">
-      <label for="institution">Institution:</label>
-      <select id="institution" name="institution"></select>
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password" required />
-      <button type="submit">Login</button>
-      <div id="login-error"></div>
-    </form>
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Union Dues Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Nunito:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="login-container">
+      <h2>Login</h2>
+      <form id="login-form">
+        <label for="institution">Institution:</label>
+        <select id="institution" name="institution"></select>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required />
+        <button type="submit">Login</button>
+        <div id="login-error"></div>
+      </form>
+    </div>
 
-  <div id="dashboard-container" style="display:none;">
-    <header>
-      <h2>Union Dues Portal <span id="institution-name"></span></h2>
-      <button id="logout-btn">Logout</button>
-    </header>
-    <section id="summary">
-      <div class="summary-box">
-        <strong>Total Members:</strong> <span id="total-members">0</span>
-      </div>
-      <div class="summary-box">
-        <strong>Total Paid (USD):</strong> $<span id="total-usd">0</span>
-      </div>
-      <div class="summary-box">
-        <strong>Total Paid (ZWL):</strong> <span id="total-zwl">0</span>
-      </div>
-      <div class="summary-box">
-        <strong>Outstanding Months:</strong> <span id="outstanding-months">0</span>
-      </div>
-    </section>
-    <nav>
-      <button class="tab-btn active" data-tab="members-tab">Members</button>
-      <button class="tab-btn" data-tab="payment-history-tab">Payment History</button>
-      <button class="tab-btn" data-tab="log-payment-tab">Log Payment</button>
-    </nav>
-    <div id="tab-content">
-      <div id="members-tab" class="tab active">
-        <h3>Members</h3>
-        <input type="text" id="member-search" placeholder="Search by Member ID, Name, or Job Title">
-        <table id="members-table">
-          <thead>
-            <tr>
-              <th>Member ID</th>
-              <th>Name</th>
-              <th>Job Title</th>
-              <th>Email</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div id="payment-history-tab" class="tab">
-        <h3>Payment History</h3>
-        <button id="download-csv-btn">Download CSV</button>
-        <table id="payment-history-table">
-          <thead>
-            <tr>
-              <th>TransactionID</th>
-              <th>Date</th>
-              <th>AmountUSD</th>
-              <th>AmountZWL</th>
-              <th>MonthsPaid</th>
-              <th>Status</th>
-              <th>PickupDate</th>
-              <th>ScheduleFileLink</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div id="log-payment-tab" class="tab">
-        <h3>Log Payment</h3>
-        <form id="log-payment-form" enctype="multipart/form-data">
-          <label for="transaction-id">Transaction ID:</label>
-          <input type="text" id="transaction-id" name="transaction-id" required>
-          <label for="payment-date">Date:</label>
-          <input type="date" id="payment-date" name="payment-date" required>
-          <label for="amount-usd">Amount (USD):</label>
-          <input type="number" id="amount-usd" name="amount-usd" min="0" step="0.01" required>
-          <label for="amount-zwl">Amount (ZWL):</label>
-          <input type="number" id="amount-zwl" name="amount-zwl" min="0" step="0.01" required>
-          <label for="months-paid">Months Paid (comma separated, e.g. Jan,Feb,Mar):</label>
-          <input type="text" id="months-paid" name="months-paid" required>
-          <label for="schedule-file">Attach Schedule File:</label>
-          <input type="file" id="schedule-file" name="schedule-file" accept=".pdf,.xls,.xlsx">
-          <button type="submit">Submit Payment</button>
-          <div id="log-payment-message"></div>
-        </form>
+    <div id="dashboard-container" style="display: none">
+      <header>
+        <h2>Union Dues Portal <span id="institution-name"></span></h2>
+        <button id="logout-btn">Logout</button>
+      </header>
+      <section id="summary">
+        <div class="summary-box">
+          <strong>Total Members:</strong> <span id="total-members">0</span>
+        </div>
+        <div class="summary-box">
+          <strong>Total Paid (USD):</strong> $<span id="total-usd">0</span>
+        </div>
+        <div class="summary-box">
+          <strong>Total Paid (ZWL):</strong> <span id="total-zwl">0</span>
+        </div>
+        <div class="summary-box">
+          <strong>Outstanding Months:</strong>
+          <span id="outstanding-months">0</span>
+        </div>
+      </section>
+      <nav>
+        <button class="tab-btn active" data-tab="members-tab">Members</button>
+        <button class="tab-btn" data-tab="payment-history-tab">
+          Payment History
+        </button>
+        <button class="tab-btn" data-tab="log-payment-tab">Log Payment</button>
+      </nav>
+      <div id="tab-content">
+        <div id="members-tab" class="tab active">
+          <h3>Members</h3>
+          <input
+            type="text"
+            id="member-search"
+            placeholder="Search by Member ID, Name, or Job Title"
+          />
+          <table id="members-table">
+            <thead>
+              <tr>
+                <th>Member ID</th>
+                <th>Full Name</th>
+                <th>National I.D</th>
+                <th>Date of Birth</th>
+                <th>Gender</th>
+                <th>Job Title</th>
+                <th>Date of Employment</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="payment-history-tab" class="tab">
+          <h3>Payment History</h3>
+          <button id="download-csv-btn">Download CSV</button>
+          <table id="payment-history-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Receipt Number</th>
+                <th>Date</th>
+                <th>Amount (USD)</th>
+                <th>Amount (ZWL)</th>
+                <th>Months Paid</th>
+                <th>Status</th>
+                <th>PickupDate</th>
+                <th>ScheduleFileLink</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="log-payment-tab" class="tab">
+          <h3>Log Payment</h3>
+          <form id="log-payment-form" enctype="multipart/form-data">
+            <label for="transaction-id">Transaction ID:</label>
+            <input
+              type="text"
+              id="transaction-id"
+              name="transaction-id"
+              required
+            />
+            <label for="payment-date">Date:</label>
+            <input type="date" id="payment-date" name="payment-date" required />
+            <label for="amount-usd">Amount (USD):</label>
+            <input
+              type="number"
+              id="amount-usd"
+              name="amount-usd"
+              min="0"
+              step="0.01"
+              required
+            />
+            <label for="amount-zwl">Amount (ZWL):</label>
+            <input
+              type="number"
+              id="amount-zwl"
+              name="amount-zwl"
+              min="0"
+              step="0.01"
+              required
+            />
+            <label for="months-paid"
+              >Months Paid (comma separated, e.g. Jan,Feb,Mar):</label
+            >
+            <input type="text" id="months-paid" name="months-paid" required />
+            <label for="schedule-file">Attach Schedule File:</label>
+            <input
+              type="file"
+              id="schedule-file"
+              name="schedule-file"
+              accept=".pdf,.xls,.xlsx"
+            />
+            <button type="submit">Submit Payment</button>
+            <div id="log-payment-message"></div>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-  <script src="app.js"></script>
-</body>
+    <script src="app.js"></script>
+  </body>
 </html>

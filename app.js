@@ -1,10 +1,12 @@
-// Your deployed Apps Script endpoint URLs here:
+// ===== CONFIG =====
 const APPS_SCRIPT_BASE_URL = 'https://script.google.com/macros/s/AKfycbzN71NkBa-kapo6BuOVsBruAeBCuNYrwaNbxPtvfFYBjXwLsQuUKva23T3H_alxqCv9/exec';
+const CREDENTIALS_URL = 'credentials.json'; // JSON file stored in your GitHub repo
 
 let institutionList = [];
 let institutionID = '';
 let institutionName = '';
 let session = {}; // stores login context
+let credentialMap = {}; // ID → password lookup
 
 document.addEventListener('DOMContentLoaded', function() {
   initLogin();
@@ -12,40 +14,38 @@ document.addEventListener('DOMContentLoaded', function() {
   initLogout();
 });
 
+// ===== LOGIN HANDLING =====
 function initLogin() {
-  fetch(`${APPS_SCRIPT_BASE_URL}?action=getInstitutions`)
+  fetch(CREDENTIALS_URL)
     .then(res => res.json())
     .then(data => {
       institutionList = data.institutions || [];
+      credentialMap = Object.fromEntries(institutionList.map(inst => [inst.ID, inst.Password]));
+
       const select = document.getElementById('institution');
-      select.innerHTML = institutionList.map(inst => 
+      select.innerHTML = institutionList.map(inst =>
         `<option value="${inst.ID}">${inst.Name}</option>`
       ).join('');
-    });
+    })
+    .catch(err => console.error('Failed to load credentials:', err));
 
   document.getElementById('login-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const selectedID = document.getElementById('institution').value;
     const password = document.getElementById('password').value;
-    fetch(`${APPS_SCRIPT_BASE_URL}?action=login`, {
-      method: 'POST',
-      body: JSON.stringify({institutionID: selectedID, password}),
-      headers: {'Content-Type': 'application/json'}
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        institutionID = selectedID;
-        institutionName = institutionList.find(i => i.ID === institutionID)?.Name || '';
-        session = data.session || {};
-        showDashboard();
-      } else {
-        document.getElementById('login-error').textContent = 'Invalid credentials.';
-      }
-    });
+
+    if (credentialMap[selectedID] && credentialMap[selectedID] === password) {
+      institutionID = selectedID;
+      institutionName = institutionList.find(i => i.ID === institutionID)?.Name || '';
+      session = { institutionID, loggedIn: true };
+      showDashboard();
+    } else {
+      document.getElementById('login-error').textContent = 'Invalid credentials.';
+    }
   });
 }
 
+// ===== DASHBOARD =====
 function showDashboard() {
   document.getElementById('login-container').style.display = 'none';
   document.getElementById('dashboard-container').style.display = '';
@@ -78,19 +78,22 @@ function initTabs() {
   });
 }
 
+// ===== SUMMARY =====
 function loadSummary() {
-  fetch(`${APPS_SCRIPT_BASE_URL}?action=getSummary&institutionID=${encodeURIComponent(institutionID)}`)
+  fetch(`${APPS_SCRIPT_BASE_URL}?action=getSummary&institutionID=${encodeURIComponent(institutionID)}`, { mode: 'cors' })
     .then(res => res.json())
     .then(data => {
       document.getElementById('total-members').textContent = data.totalMembers || 0;
       document.getElementById('total-usd').textContent = data.totalUSD || 0;
       document.getElementById('total-zwl').textContent = data.totalZWL || 0;
       document.getElementById('outstanding-months').textContent = data.outstandingMonths || 0;
-    });
+    })
+    .catch(err => console.error('Failed to load summary:', err));
 }
 
+// ===== MEMBERS =====
 function loadMembers() {
-  fetch(`${APPS_SCRIPT_BASE_URL}?action=getMembers&institutionID=${encodeURIComponent(institutionID)}`)
+  fetch(`${APPS_SCRIPT_BASE_URL}?action=getMembers&institutionID=${encodeURIComponent(institutionID)}`, { mode: 'cors' })
     .then(res => res.json())
     .then(data => {
       let members = data.members || [];
@@ -105,7 +108,8 @@ function loadMembers() {
         );
         populateMembersTable(filtered);
       };
-    });
+    })
+    .catch(err => console.error('Failed to load members:', err));
 }
 
 function populateMembersTable(members) {
@@ -114,14 +118,19 @@ function populateMembersTable(members) {
     <tr>
       <td>${m.MemberID}</td>
       <td>${m.Name}</td>
+      <td>${m.NationalID}</td>
+      <td>${m.DateOfBirth ? new Date(m.DateOfBirth).toLocaleDateString() : ''}</td>
+      <td>${m.Gender || ''}</td>
       <td>${m.JobTitle}</td>
-      <td>${m.Email}</td>
+      <td>${m.DateOfEmployment ? new Date(m.DateOfEmployment).toLocaleDateString() : ''}</td>
+      <td>${m.Grade || ''}</td>
     </tr>
   `).join('');
 }
 
+// ===== PAYMENTS =====
 function loadPaymentHistory() {
-  fetch(`${APPS_SCRIPT_BASE_URL}?action=getPaymentHistory&institutionID=${encodeURIComponent(institutionID)}`)
+  fetch(`${APPS_SCRIPT_BASE_URL}?action=getPaymentHistory&institutionID=${encodeURIComponent(institutionID)}`, { mode: 'cors' })
     .then(res => res.json())
     .then(data => {
       let payments = data.payments || [];
@@ -129,12 +138,12 @@ function loadPaymentHistory() {
 
       document.getElementById('download-csv-btn').onclick = () => {
         let csvRows = [
-          ['TransactionID','Date','AmountUSD','AmountZWL','MonthsPaid','Status','PickupDate','ScheduleFileLink']
+          ['TransactionID','ReceiptNumber','Date','AmountUSD','AmountZWL','MonthsPaid','Status','PickupDate','ScheduleFileLink']
         ];
         payments.forEach(p => {
           csvRows.push([
-            p.TransactionID, p.Date, p.AmountUSD, p.AmountZWL,
-            p.MonthsPaid, p.Status, p.PickupDate, p.ScheduleFileLink
+            p.TransactionID, p.ReceiptNumber || '', p.Date, p.AmountUSD, p.AmountZWL,
+            p.MonthsPaid, p.Status, p.PickupDate || '', p.ScheduleFileLink || ''
           ]);
         });
         let csvContent = csvRows.map(e => e.join(",")).join("\n");
@@ -145,7 +154,8 @@ function loadPaymentHistory() {
         a.download = 'payment_history.csv';
         a.click();
       };
-    });
+    })
+    .catch(err => console.error('Failed to load payment history:', err));
 }
 
 function populatePaymentsTable(payments) {
@@ -153,6 +163,7 @@ function populatePaymentsTable(payments) {
   tbody.innerHTML = payments.map(p => `
     <tr>
       <td>${p.TransactionID}</td>
+      <td>${p.ReceiptNumber || ''}</td>
       <td>${p.Date}</td>
       <td>${p.AmountUSD}</td>
       <td>${p.AmountZWL}</td>
@@ -173,6 +184,7 @@ function statusLabel(status) {
   }
 }
 
+// ===== LOG PAYMENT =====
 function initLogPayment() {
   const form = document.getElementById('log-payment-form');
   form.onsubmit = function(e) {
@@ -195,17 +207,14 @@ function initLogPayment() {
     };
 
     if (file) {
-      // File upload via Apps Script
       let fr = new FileReader();
       fr.onload = function() {
-        let fileData = fr.result.split(',')[1]; // base64 part
+        let fileData = fr.result.split(',')[1]; 
         fetch(`${APPS_SCRIPT_BASE_URL}?action=uploadFile`, {
           method: 'POST',
-          body: JSON.stringify({
-            fileName: file.name,
-            fileData: fileData
-          }),
-          headers: {'Content-Type': 'application/json'}
+          body: JSON.stringify({ fileName: file.name, fileData }),
+          headers: {'Content-Type': 'application/json'},
+          mode: 'cors'
         })
         .then(res => res.json())
         .then(fileRes => {
@@ -224,7 +233,8 @@ function submitPayment(paymentData) {
   fetch(`${APPS_SCRIPT_BASE_URL}?action=logPayment`, {
     method: 'POST',
     body: JSON.stringify(paymentData),
-    headers: {'Content-Type': 'application/json'}
+    headers: {'Content-Type': 'application/json'},
+    mode: 'cors'
   })
   .then(res => res.json())
   .then(data => {
@@ -237,5 +247,9 @@ function submitPayment(paymentData) {
       document.getElementById('log-payment-message').textContent = 'Failed to log payment.';
     }
     setTimeout(() => document.getElementById('log-payment-message').textContent = '', 4000);
-  });
+  })
+  .catch(err => console.error('Failed to submit payment:', err));
 }
+// ===================================
+
+// Note: Ensure CORS is enabled in your Google Apps Script deployment settings. 
